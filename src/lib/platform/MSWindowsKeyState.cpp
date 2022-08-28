@@ -680,6 +680,12 @@ MSWindowsKeyState::useSavedModifiers(bool enable)
 	}
 }
 
+static
+wchar_t
+unpackKeyChar(WPARAM wParam) {
+	return (wchar_t)(((wParam >> 8) & 0xffu) | ((wParam >> 16) & 0xff00u));
+}
+
 KeyID
 MSWindowsKeyState::mapKeyFromEvent(WPARAM charAndVirtKey,
 				LPARAM info, KeyModifierMask* maskOut) const
@@ -688,7 +694,7 @@ MSWindowsKeyState::mapKeyFromEvent(WPARAM charAndVirtKey,
 		KeyModifierControl | KeyModifierAlt;
 
 	// extract character, virtual key, and if we didn't use AltGr
-	char c       = (char)((charAndVirtKey & 0xff00u) >> 8);
+	wchar_t c    = unpackKeyChar(charAndVirtKey);
 	UINT vkCode  = (charAndVirtKey & 0xffu);
 	bool noAltGr = ((charAndVirtKey & 0xff0000u) != 0);
 
@@ -697,25 +703,7 @@ MSWindowsKeyState::mapKeyFromEvent(WPARAM charAndVirtKey,
 
 	// check if not in table;  map character to key id
 	if (id == kKeyNone && c != 0) {
-		if ((c & 0x80u) == 0) {
-			// ASCII
-			id = static_cast<KeyID>(c) & 0xffu;
-		}
-		else {
-			// character is not really ASCII.  instead it's some
-			// character in the current ANSI code page.  try to
-			// convert that to a Unicode character.  if we fail
-			// then use the single byte character as is.
-			char src = c;
-			wchar_t unicode;
-			if (MultiByteToWideChar(CP_THREAD_ACP, MB_PRECOMPOSED,
-										&src, 1, &unicode, 1) > 0) {
-				id = static_cast<KeyID>(unicode);
-			}
-			else {
-				id = static_cast<KeyID>(c) & 0xffu;
-			}
-		}
+		id = static_cast<KeyID>(c);
 	}
 
 	// set modifier mask

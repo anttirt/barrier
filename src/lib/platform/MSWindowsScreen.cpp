@@ -1109,13 +1109,19 @@ MSWindowsScreen::onMark(UInt32 mark)
     return true;
 }
 
+static
+wchar_t
+unpackKeyChar(WPARAM wParam) {
+	return (wchar_t)(((wParam >> 8) & 0xffu) | ((wParam >> 16) & 0xff00u));
+}
+
 bool
 MSWindowsScreen::onKey(WPARAM wParam, LPARAM lParam)
 {
     static const KeyModifierMask s_ctrlAlt =
         KeyModifierControl | KeyModifierAlt;
 
-    LOG((CLOG_DEBUG1 "event: Key char=%d, vk=0x%02x, nagr=%d, lParam=0x%08x", (wParam & 0xff00u) >> 8, wParam & 0xffu, (wParam & 0x10000u) ? 1 : 0, lParam));
+    LOG((CLOG_DEBUG1 "event: Key char=%d, vk=0x%02x, nagr=%d, lParam=0x%08x", unpackKeyChar(wParam), wParam & 0xffu, (wParam & 0x10000u) ? 1 : 0, lParam));
 
     // get event info
     KeyButton button         = (KeyButton)((lParam & 0x01ff0000) >> 16);
